@@ -1,0 +1,7 @@
+1	101	101	Agent
+2	102	102	Agent
+3	201	201	Reviewer
+4	301	301	SchoolApprover
+5	302	302	SchoolApprover
+6	303	303	SchoolApprover
+7      000  000  admin

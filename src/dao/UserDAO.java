@@ -1,98 +1,63 @@
 package dao;
+// src/dao/UserDAO.java
+import model.User;
+import util.DatabaseConnection;  // 导入 DatabaseConnection 类
+import java.sql.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 public class UserDAO {
-    private static final String DB_URL = "jdbc:sqlite:database/study_abroad.db";
+    private Connection conn;
 
-    public static boolean registerUser(String username, String password, String email, String role) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            String query = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)";
-            PreparedStatement pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            pstmt.setString(3, email); // 处理邮箱字段
-            pstmt.setString(4, role);
-            pstmt.executeUpdate();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public UserDAO() throws SQLException {
+        this.conn = DatabaseConnection.getConnection();  // 使用 DatabaseConnection 获取连接
     }
 
-
-    public static boolean validateLogin(String username, String password) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            String query = "SELECT * FROM users WHERE username = ? AND password = ?";
-            PreparedStatement pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public static String getRole(String username, String password) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            String query = "SELECT role FROM users WHERE username = ? AND password = ?";
-            PreparedStatement pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getString("role");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public static boolean isUsernameExist(String username) {
-        String sql = "SELECT * FROM users WHERE username = ?";
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    // 根据用户名验证用户是否存在
+    public boolean isUsernameExist(String username) throws SQLException {
+        String query = "SELECT 1 FROM users WHERE username = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
-            return rs.next(); // 已存在
-        } catch (Exception e) {
-            e.printStackTrace();
+            return rs.next();  // 如果找到该用户名，返回 true
         }
-        return false;
     }
 
-
-
-
-    public static boolean register(String username, String password, String email, String role) {
-        if (isUsernameExist(username)) return false;
-
-        String sql = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
+    // 根据用户名和密码验证用户身份
+    public boolean validateUser(String username, String password) throws SQLException {
+        String query = "SELECT 1 FROM users WHERE username = ? AND password = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, username);
             stmt.setString(2, password);
-            stmt.setString(3, email);
-            stmt.setString(4, role);
-            return stmt.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();  // 如果找到了匹配的用户名和密码，返回 true
         }
-        return false;
-
-
-
-
-
     }
+
+    // 获取用户角色
+    public String getUserRole(String username) throws SQLException {
+        String query = "SELECT role FROM users WHERE username = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("role");  // 返回角色
+            }
+            return null;  // 如果找不到该用户名
+        }
+    }
+
+
+    // 修改密码
+    public boolean updatePassword(String username, String newPassword) throws SQLException {
+        String query = "UPDATE users SET password = ? WHERE username = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, newPassword);  // 新密码
+            stmt.setString(2, username);  // 用户名
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;  // 如果更新成功，返回 true
+        }
+    }
+
 
 
 
